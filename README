@@ -1,0 +1,97 @@
+# Panduan Sistem: Interactive Triage Wizard untuk Network Troubleshooting
+Aplikasi ini adalah **Asisten Diagnosis Interaktif (Triage Wizard)** berbasis React yang dirancang khusus untuk membantu *Network Engineer* menentukan metodologi *troubleshooting* paling efektif secara cepat dan berbasis data, meminimalkan waktu henti (*downtime*), serta menghindari kesalahan diagnosis (menebak-nebak tanpa arah).
+## 1. Arsitektur Logika & Alur Keputusan (Decision Tree)
+Sistem menggunakan pendekatan **Eliminasi Berprioritas (Priority-based Elimination)**. Pertanyaan diatur secara berurutan dari faktor eksternal yang paling mudah divalidasi hingga analisis teknis yang lebih abstrak:
+```
+[Mulai: Q1] Apakah ada perubahan baru-baru ini?
+   │
+   ├── (YA) ──> [Metode: SPOT]
+   │
+   └── (TIDAK) ─> [Q2] Apakah putus total & berdampak massal?
+                   │
+                   ├── (YA) ──> [Metode: BOTTOM-UP]
+                   │
+                   └── (TIDAK) ─> [Q3] Apakah hanya SATU aplikasi yang bermasalah?
+                                   │
+                                   ├── (YA) ──> [Metode: TOP-DOWN]
+                                   │
+                                   └── (TIDAK) ─> [Q4] Apakah software bersih tapi curiga hardware?
+                                                   │
+                                                   ├── (YA) ──> [Metode: MOVE]
+                                                   │
+                                                   └── (TIDAK) ─> [Q5] Apakah traffic lintas banyak device/domain?
+                                                                   │
+                                                                   ├── (YA) ──> [Metode: FOLLOW]
+                                                                   │
+                                                                   └── (TIDAK) ─> [Q6] Apakah ada data monitoring?
+                                                                                   │
+                                                                                   ├── (YA) ──> [Metode: DIVIDE]
+                                                                                   │
+                                                                                   └── (TIDAK) ─> [Fallback: BOTTOM-UP]
+
+```
+## 2. Taksonomi 6 Metodologi & Prosedur Eksekusi
+Aplikasi ini memetakan enam taktik fundamental yang diakui dalam industri jaringan:
+### ⚖ 1. SPOT (Spot the Difference / Comparison Method)
+ * **Trigger Utama:** Terdeteksi adanya perubahan konfigurasi, pembaruan *firmware*, *patch*, atau aktivitas fisik tepat sebelum masalah muncul.
+ * **Cara Kerja:** Membandingkan status saat ini (bermasalah) dengan status cadangan/sebelumnya (normal) untuk mengisolasi anomali.
+ * **Langkah Eksekusi:**
+   1. Identifikasi komponen atau parameter yang berubah.
+   2. Bandingkan berkas konfigurasi *working* vs *non-working*.
+   3. Isolasi perbedaan yang relevan dengan gejala eror.
+   4. Lakukan *revert* (pembatalan) atau penyesuaian satu per satu.
+ * > ⚠ **Pitfall:** Jangan menganggap semua perbedaan konfigurasi sebagai penyebab. Bedakan mana perubahan yang memang disengaja (dan aman) dengan perubahan yang merusak.
+   > 
+### ↑ 2. BOTTOM-UP (L1 → L7 Walk)
+ * **Trigger Utama:** Terjadi putus koneksi total (*zero connectivity*), perangkat tidak dapat di-*ping*, dan berdampak luas pada banyak pengguna/sistem.
+ * **Cara Kerja:** Melakukan investigasi dari lapisan fisik (Layer 1) berurutan naik ke atas hingga lapisan aplikasi (Layer 7) berdasarkan Model OSI.
+ * **Langkah Eksekusi:**
+   * **L1:** Periksa fisik kabel, modul SFP, kapasitas daya optik (*optical power*), dan status lampu port.
+   * **L2:** Periksa *MAC address table*, tabel ARP, segmentasi VLAN, protokol STP, dan agregasi tautan (LAG/LACP).
+   * **L3:** Periksa tabel rute (*routing table*), alokasi IP/Subnet, dan aturan kendali akses (ACL).
+   * **L4+:** Periksa jabat tangan TCP/UDP, status port, dan aturan pada dinding api (*firewall rule*).
+ * > ⚠ **Pitfall:** Metode ini adalah yang paling lambat jika ternyata akar masalahnya berada di Layer 7. Gunakan hanya jika tidak ada informasi awal lain yang tersedia.
+   > 
+### ↓ 3. TOP-DOWN (L7 → L1 Walk)
+ * **Trigger Utama:** Masalah hanya terjadi pada satu aplikasi spesifik, sementara fungsi jaringan lainnya (seperti *ping* dan aplikasi lain) berjalan normal.
+ * **Cara Kerja:** Memulai investigasi dari lapisan aplikasi (Layer 7) dan turun ke bawah jika lapisan atas terbukti bersih.
+ * **Langkah Eksekusi:**
+   1. **L7:** Validasi log aplikasi, respons HTTP (misal: eror 5xx), dan resolusi DNS.
+   2. **L4:** Validasi proses *TCP handshake* dan keterjangkauan port (*port reachability*).
+   3. **L3:** Validasi *routing*, aturan ACL, dan translasi alamat (NAT).
+   4. **L2-L1:** Hanya diperiksa jika seluruh lapisan di atasnya dipastikan bersih.
+ * > ⚠ **Pitfall:** Jangan gunakan metode ini jika banyak pengguna terdampak sekaligus. Gangguan massal biasanya mengindikasikan masalah di L1-L3, sehingga memulai dari L7 hanya akan membuang waktu.
+   > 
+### ⇄ 4. MOVE (Move the Problem / Component Substitution)
+ * **Trigger Utama:** Konfigurasi perangkat lunak dipastikan bersih, tetapi gangguan tetap ada (misal: *intermittent packet loss*), atau ada kecurigaan kuat pada kerusakan fisik.
+ * **Cara Kerja:** Menukar atau memindahkan komponen yang dicurigai ke slot/jalur lain untuk melihat apakah gangguan ikut berpindah.
+ * **Langkah Eksekusi:**
+   1. Tentukan komponen fisik yang dicurigai (kabel, port, SFP, atau modul).
+   2. Siapkan komponen cadangan yang sudah teruji normal (*known-good component*).
+   3. Ganti **SATU** komponen saja dalam satu waktu.
+   4. Amati efeknya: apakah masalah hilang atau berpindah tempat.
+ * > ⚠ **Pitfall:** Dilarang mengganti lebih dari satu komponen sekaligus dalam satu langkah. Jika Anda mengganti kabel dan SFP secara bersamaan, Anda tidak akan pernah tahu komponen mana yang sebenarnya rusak.
+   > 
+### → 5. FOLLOW (Follow the Path / Packet Walk)
+ * **Trigger Utama:** Jaringan memiliki jalur yang kompleks (*multi-device path*) atau melibatkan tim lintas domain (contoh: tim Jaringan, Keamanan, dan Aplikasi).
+ * **Cara Kerja:** Melacak perjalanan paket data secara aktual dari titik asal (*source*) ke titik tujuan (*destination*) langkah demi langkah (*hop-by-hop*).
+ * **Langkah Eksekusi:**
+   1. Petakan jalur aktual yang dilewati paket (cth: *Client → Switch → Router → Firewall → Load Balancer → Server*).
+   2. Verifikasi konfigurasi *routing*, kebijakan keamanan, dan *state* di setiap perangkat (*hop*).
+   3. Periksa jalur berangkat (*forward path*) **DAN** jalur pulang (*return path*).
+   4. Isolasi pada perangkat ke berapa paket tersebut dijatuhkan (*dropped*) atau diubah.
+ * > ⚠ **Pitfall:** Selalu verifikasi jalur pulang (*return path*). Kasus *asymmetric routing* (paket bisa pergi tapi tidak tahu jalan pulang) sering terlewat karena engineer hanya fokus memeriksa jalur berangkat.
+   > 
+### ⊕ 6. DIVIDE (Divide & Conquer / Half-Split Method)
+ * **Trigger Utama:** Tersedia data awal dari sistem monitoring (seperti Grafana, Prometheus, atau SolarWinds) atau engineer berpengalaman memiliki hipotesis kuat.
+ * **Cara Kerja:** Memotong ruang lingkup masalah menjadi dua bagian dengan melakukan pengecekan langsung di titik tengah (intermediat).
+ * **Langkah Eksekusi:**
+   1. Tentukan titik tengah investigasi berdasarkan visualisasi monitoring.
+   2. Lakukan pengujian kondisi di titik tengah tersebut.
+   3. Jika titik tengah **bermasalah**: Fokuskan investigasi ke arah hulu/bawah.
+   4. Jika titik tengah **bersih**: Fokuskan investigasi ke arah hilir/atas.
+ * > ⚠ **Pitfall:** Metode ini tidak cocok untuk engineer junior yang belum memiliki intuisi teknis. Tanpa data dan pemahaman arsitektur yang matang, penentuan titik tengah hanya akan menjadi tebakan acak.
+   > 
+## 3. Fitur Keamanan Sistem: Mekanisme *Fallback*
+Aplikasi ini dilengkapi dengan fungsi *safe-guard*. Ketika pengguna menjawab **"TIDAK"** pada semua skenario spesifik (Pertanyaan 1 s.d 6), sistem secara otomatis mengaktifkan mode **Fallback to Bottom-Up**.
+Logikanya sederhana: *Di dalam ketidakpastian total tanpa data monitoring, kembali ke dasar (Layer 1) secara sistematis adalah satu-satunya prosedur teraman untuk menemukan akar masalah.*
