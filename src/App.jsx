@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState } from "react";
 
 const METHODOLOGIES = {
   SPOT: {
@@ -231,6 +231,15 @@ export default function App() {
       alignItems: "center",
       padding: "24px 16px 48px",
     }}>
+      {/* CSS Injection untuk Media Query */}
+      <style>{`
+        @media (max-width: 480px) {
+          .progress-text {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 520, marginBottom: 32 }}>
         <div style={{
@@ -238,6 +247,7 @@ export default function App() {
           alignItems: "center",
           gap: 10,
           marginBottom: 4,
+          flexWrap: "wrap"
         }}>
           <span style={{
             fontFamily: "monospace",
@@ -318,7 +328,7 @@ export default function App() {
                 }}>
                   {i < currentQ ? "✓" : i + 1}
                 </div>
-                <span style={{
+                <span className="progress-text" style={{
                   fontSize: 9,
                   color: i <= currentQ ? "#94A3B8" : "#334155",
                   textAlign: "center",
@@ -410,11 +420,12 @@ export default function App() {
           </div>
 
           {/* Answer buttons */}
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button
               onClick={() => handleAnswer("yes")}
               style={{
                 flex: 1,
+                minWidth: "120px",
                 padding: "14px 20px",
                 background: "#0A2020",
                 border: "1px solid #134E48",
@@ -426,14 +437,6 @@ export default function App() {
                 letterSpacing: "0.02em",
                 transition: "all 0.2s",
               }}
-              onMouseEnter={e => {
-                e.target.style.background = "#0D3030";
-                e.target.style.borderColor = "#10B981";
-              }}
-              onMouseLeave={e => {
-                e.target.style.background = "#0A2020";
-                e.target.style.borderColor = "#134E48";
-              }}
             >
               Ya
             </button>
@@ -441,6 +444,7 @@ export default function App() {
               onClick={() => handleAnswer("no")}
               style={{
                 flex: 1,
+                minWidth: "120px",
                 padding: "14px 20px",
                 background: "#150A20",
                 border: "1px solid #3B1F6F",
@@ -451,14 +455,6 @@ export default function App() {
                 cursor: "pointer",
                 letterSpacing: "0.02em",
                 transition: "all 0.2s",
-              }}
-              onMouseEnter={e => {
-                e.target.style.background = "#1F1030";
-                e.target.style.borderColor = "#8B5CF6";
-              }}
-              onMouseLeave={e => {
-                e.target.style.background = "#150A20";
-                e.target.style.borderColor = "#3B1F6F";
               }}
             >
               Tidak
@@ -513,6 +509,7 @@ export default function App() {
               alignItems: "center",
               gap: 14,
               marginBottom: 20,
+              flexWrap: "wrap"
             }}>
               <div style={{
                 width: 48,
@@ -568,6 +565,7 @@ export default function App() {
               display: "flex",
               gap: 8,
               alignItems: "center",
+              flexWrap: "wrap"
             }}>
               <span style={{
                 fontFamily: "monospace",
@@ -804,7 +802,7 @@ export default function App() {
           </div>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
             gap: 8,
           }}>
             {Object.values(METHODOLOGIES).map((met) => (
