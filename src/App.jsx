@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // <-- Tambahkan { useState } di sini
+import React, { useState } from "react"
 
 const METHODOLOGIES = {
   SPOT: {
