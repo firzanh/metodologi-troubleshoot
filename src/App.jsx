@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React from 'react'; // <-- WAJIB ADA DI BARIS PERTAMA
+
 
 const METHODOLOGIES = {
   SPOT: {
