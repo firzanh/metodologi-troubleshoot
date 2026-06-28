@@ -231,12 +231,28 @@ export default function App() {
       alignItems: "center",
       padding: "24px 16px 48px",
     }}>
-      {/* CSS Injection untuk Media Query */}
+      {/* CSS Injection untuk Media Query & Animasi */}
       <style>{`
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
           .progress-text {
             display: none !important;
           }
+        }
+        
+        /* Animasi Fade In & Slide Up */
+        @keyframes cardFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animated-card {
+          animation: cardFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
 
@@ -359,15 +375,19 @@ export default function App() {
 
       {/* Question Card */}
       {!result && (
-        <div style={{
-          width: "100%",
-          maxWidth: 520,
-          background: "#0D1422",
-          border: "1px solid #1E293B",
-          borderRadius: 16,
-          padding: "28px 24px",
-          marginBottom: 16,
-        }}>
+        <div 
+          key={`q-${currentQ}`} /* Memicu ulang animasi saat pertanyaan berganti */
+          className="animated-card"
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            background: "#0D1422",
+            border: "1px solid #1E293B",
+            borderRadius: 16,
+            padding: "28px 24px",
+            marginBottom: 16,
+          }}
+        >
           <div style={{
             fontFamily: "monospace",
             fontSize: 10,
@@ -465,11 +485,15 @@ export default function App() {
 
       {/* Result Card */}
       {result && m && (
-        <div style={{
-          width: "100%",
-          maxWidth: 520,
-          marginBottom: 16,
-        }}>
+        <div 
+          key={`result-${result}`} /* Memicu animasi saat hasil keluar */
+          className="animated-card"
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            marginBottom: 16,
+          }}
+        >
           {/* Fallback notice */}
           {isFallback && (
             <div style={{
